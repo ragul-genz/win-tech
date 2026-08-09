@@ -8,10 +8,13 @@ const Login = ({ onLogin }) => {
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        // Hardcoded credentials as requested
-        if (userId === 'ragul' && password === '123') {
+        if (userId === 'Madara' && password === 'madara') {
             setError('');
-            onLogin();
+            onLogin('admin', userId);
+        } else if (userId.trim() !== '' && password.trim() !== '') {
+            // Allow any normal user to log in to demonstrate the "whoever logs in" requirement
+            setError('');
+            onLogin('user', userId);
         } else {
             setError('Invalid ID or Password. Please try again.');
         }
