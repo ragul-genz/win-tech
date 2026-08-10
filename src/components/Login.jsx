@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import Logo from './Logo';
 
-const Login = ({ onLogin }) => {
+const Login = ({ onLogin, onBack }) => {
     const [userId, setUserId] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
@@ -22,8 +22,16 @@ const Login = ({ onLogin }) => {
 
     return (
         <div className="split-login-page">
-            <div className="split-login-left">
-                <div className="login-form-container">
+            <div className="split-login-left" style={{ position: 'relative' }}>
+                {onBack && (
+                    <button 
+                        onClick={onBack} 
+                        style={{ position: 'absolute', top: '20px', left: '20px', background: 'none', border: 'none', cursor: 'pointer', fontSize: '1rem', display: 'flex', alignItems: 'center', gap: '5px', color: '#64748b' }}
+                    >
+                        <i className='bx bx-arrow-back'></i> Back to Home
+                    </button>
+                )}
+                <div className="login-form-container" style={{ marginTop: '40px' }}>
                     <div className="login-logo">
                         <Logo />
                     </div>

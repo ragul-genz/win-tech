@@ -2,10 +2,13 @@ import React, { useState } from 'react';
 import DashboardHeader from './components/DashboardHeader';
 import DashboardCourses from './components/DashboardCourses';
 import DashboardBlogs from './components/DashboardBlogs';
+import DashboardPractice from './components/DashboardPractice';
 import Login from './components/Login';
 import AdminDashboard from './components/AdminDashboard';
+import LandingPage from './components/LandingPage';
 
 function App() {
+  const [currentView, setCurrentView] = useState('landing'); // 'landing' | 'login' | 'dashboard'
   const [userRole, setUserRole] = useState(null); // 'admin' | 'user' | null
   const [currentUser, setCurrentUser] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -48,7 +51,7 @@ function App() {
     },
     {
         id: 2,
-        title: "Full Stack Development Ma...",
+        title: "Full Stack Development Masterclass",
         instructor: "A.Vinothkumar",
         progress: 4,
         inLibrary: true,
@@ -56,7 +59,7 @@ function App() {
     },
     {
         id: 3,
-        title: "B - HTML , CSS & Bootstra...",
+        title: "B - HTML , CSS & Bootstrap",
         instructor: "Instructor Name",
         progress: 0,
         inLibrary: true,
@@ -80,7 +83,8 @@ function App() {
         name: userId,
         id: uniqueId,
         email: userId.toLowerCase().replace(/\s+/g, '') + '@gmail.com',
-        joined: new Date().toLocaleDateString()
+        joined: new Date().toLocaleDateString(),
+        enrolledCourseIds: [] // Track purchased courses
       });
 
       const getDeviceInfo = () => {
@@ -106,6 +110,7 @@ function App() {
     } else {
       setCurrentUser(userId); // admin
     }
+    setCurrentView('dashboard');
   };
 
   const handleLikeBlog = (blogId) => {
@@ -125,10 +130,41 @@ function App() {
   const handleLogout = () => {
     setUserRole(null);
     setCurrentUser(null);
+    setCurrentView('landing');
   };
 
-  if (userRole === null) {
-    return <Login onLogin={handleLogin} />;
+  const handleEnrollCourse = (course) => {
+      if (!userRole) {
+          setCurrentView('login');
+      } else if (userRole === 'user') {
+          if (!currentUser.enrolledCourseIds.includes(course.id)) {
+              setCurrentUser({
+                  ...currentUser,
+                  enrolledCourseIds: [...currentUser.enrolledCourseIds, course.id]
+              });
+              alert(`Successfully enrolled in ${course.title}!`);
+              setCurrentView('dashboard');
+              setActiveUserTab('courses');
+          } else {
+              alert(`You are already enrolled in ${course.title}.`);
+              setCurrentView('dashboard');
+              setActiveUserTab('courses');
+          }
+      }
+  };
+
+  if (currentView === 'landing') {
+      return (
+          <LandingPage 
+              courses={courses} 
+              onLoginClick={() => setCurrentView('login')} 
+              onCourseClick={handleEnrollCourse} 
+          />
+      );
+  }
+
+  if (currentView === 'login') {
+    return <Login onLogin={handleLogin} onBack={() => setCurrentView('landing')} />;
   }
 
   if (userRole === 'admin') {
@@ -145,6 +181,9 @@ function App() {
     );
   }
 
+  // user dashboard rendering
+  const enrolledCourses = courses.filter(c => currentUser?.enrolledCourseIds?.includes(c.id));
+
   return (
     <div className="dashboard-layout">
       <DashboardHeader 
@@ -156,6 +195,7 @@ function App() {
         activeUserTab={activeUserTab}
         setActiveUserTab={setActiveUserTab}
         onLogout={handleLogout}
+        onHomeClick={() => setCurrentView('landing')}
       />
       
       {/* Navigation Sub-header */}
@@ -167,21 +207,23 @@ function App() {
                 <i className='bx bx-book-open'></i> My Courses
             </button>
             <button 
+                onClick={() => setActiveUserTab('practice')}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1rem', fontWeight: activeUserTab === 'practice' ? '600' : '500', color: activeUserTab === 'practice' ? '#4f46e5' : '#64748b', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                <i className='bx bx-code-alt'></i> Practice
+            </button>
+            <button 
                 onClick={() => setActiveUserTab('blogs')}
                 style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1rem', fontWeight: activeUserTab === 'blogs' ? '600' : '500', color: activeUserTab === 'blogs' ? '#4f46e5' : '#64748b', display: 'flex', alignItems: 'center', gap: '5px' }}>
                 <i className='bx bx-news'></i> Blogs
-            </button>
-        </div>
-        <div>
-            <button onClick={handleLogout} style={{ padding: '8px 16px', backgroundColor: '#f1f5f9', color: '#475569', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: '500', display: 'flex', alignItems: 'center', gap: '5px' }}>
-                <i className='bx bx-log-out'></i> Logout
             </button>
         </div>
       </div>
 
       <div style={{ backgroundColor: '#f8fafc', minHeight: 'calc(100vh - 130px)' }}>
           {activeUserTab === 'courses' ? (
-              <DashboardCourses searchQuery={searchQuery} courses={courses} />
+              <DashboardCourses searchQuery={searchQuery} courses={enrolledCourses} />
+          ) : activeUserTab === 'practice' ? (
+              <DashboardPractice />
           ) : activeUserTab === 'blogs' ? (
               <DashboardBlogs blogs={blogs} onLike={handleLikeBlog} searchQuery={searchQuery} />
           ) : (
