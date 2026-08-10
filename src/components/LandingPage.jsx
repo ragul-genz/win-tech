@@ -19,6 +19,7 @@ const LandingPage = ({ onLoginClick, onCourseClick, courses }) => {
                     <Logo />
                 </div>
                 <nav style={{ display: 'flex', gap: '30px' }}>
+                    <button onClick={() => scrollToSection('services')} style={{ background: 'none', border: 'none', color: '#475569', fontWeight: '500', cursor: 'pointer', fontSize: '1rem', transition: 'color 0.2s' }} onMouseOver={(e) => e.target.style.color = '#4f46e5'} onMouseOut={(e) => e.target.style.color = '#475569'}>Services</button>
                     <button onClick={() => scrollToSection('courses')} style={{ background: 'none', border: 'none', color: '#475569', fontWeight: '500', cursor: 'pointer', fontSize: '1rem', transition: 'color 0.2s' }} onMouseOver={(e) => e.target.style.color = '#4f46e5'} onMouseOut={(e) => e.target.style.color = '#475569'}>Courses</button>
                     <button onClick={() => scrollToSection('partners')} style={{ background: 'none', border: 'none', color: '#475569', fontWeight: '500', cursor: 'pointer', fontSize: '1rem', transition: 'color 0.2s' }} onMouseOver={(e) => e.target.style.color = '#4f46e5'} onMouseOut={(e) => e.target.style.color = '#475569'}>Partners</button>
                     <button onClick={() => scrollToSection('journey')} style={{ background: 'none', border: 'none', color: '#475569', fontWeight: '500', cursor: 'pointer', fontSize: '1rem', transition: 'color 0.2s' }} onMouseOver={(e) => e.target.style.color = '#4f46e5'} onMouseOut={(e) => e.target.style.color = '#475569'}>Journey</button>
@@ -78,6 +79,43 @@ const LandingPage = ({ onLoginClick, onCourseClick, courses }) => {
                     <h2 style={{ margin: 0, fontFamily: 'monospace', fontSize: '1.8rem', color: '#0f172a' }}>Amazon</h2>
                     <h2 style={{ margin: 0, fontFamily: 'monospace', fontSize: '1.8rem', color: '#0f172a' }}>TCS</h2>
                     <h2 style={{ margin: 0, fontFamily: 'monospace', fontSize: '1.8rem', color: '#0f172a' }}>Infosys</h2>
+                </div>
+            </section>
+
+            {/* Services Section */}
+            <section id="services" style={{ padding: '100px 40px', backgroundColor: '#f8fafc' }}>
+                <div style={{ maxWidth: '1200px', margin: '0 auto', textAlign: 'center' }}>
+                    <h2 style={{ fontSize: '2.5rem', color: '#0f172a', margin: '0 0 15px 0' }}>Our Premium Services</h2>
+                    <p style={{ fontSize: '1.1rem', color: '#64748b', margin: '0 0 60px 0', maxWidth: '600px', marginLeft: 'auto', marginRight: 'auto' }}>We deliver top-notch digital solutions to elevate your business in the modern world.</p>
+                    
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '30px' }}>
+                        {/* Web Development */}
+                        <div style={{ backgroundColor: 'white', padding: '40px', borderRadius: '16px', boxShadow: '0 10px 25px -5px rgba(0,0,0,0.05)', transition: 'transform 0.3s' }} onMouseOver={(e) => e.currentTarget.style.transform = 'translateY(-10px)'} onMouseOut={(e) => e.currentTarget.style.transform = 'translateY(0)'}>
+                            <div style={{ width: '80px', height: '80px', borderRadius: '20px', backgroundColor: '#e0e7ff', color: '#4f46e5', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '2.5rem', margin: '0 auto 25px auto' }}>
+                                <i className='bx bx-laptop'></i>
+                            </div>
+                            <h3 style={{ fontSize: '1.5rem', color: '#0f172a', margin: '0 0 15px 0' }}>Web Development</h3>
+                            <p style={{ color: '#64748b', lineHeight: '1.6', margin: 0 }}>Custom, responsive, and high-performance websites built with modern technologies like React, Next.js, and Node.</p>
+                        </div>
+
+                        {/* App Development */}
+                        <div style={{ backgroundColor: 'white', padding: '40px', borderRadius: '16px', boxShadow: '0 10px 25px -5px rgba(0,0,0,0.05)', transition: 'transform 0.3s' }} onMouseOver={(e) => e.currentTarget.style.transform = 'translateY(-10px)'} onMouseOut={(e) => e.currentTarget.style.transform = 'translateY(0)'}>
+                            <div style={{ width: '80px', height: '80px', borderRadius: '20px', backgroundColor: '#dcfce7', color: '#16a34a', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '2.5rem', margin: '0 auto 25px auto' }}>
+                                <i className='bx bx-mobile-alt'></i>
+                            </div>
+                            <h3 style={{ fontSize: '1.5rem', color: '#0f172a', margin: '0 0 15px 0' }}>App Development</h3>
+                            <p style={{ color: '#64748b', lineHeight: '1.6', margin: 0 }}>Native and cross-platform mobile applications for iOS and Android that deliver exceptional user experiences.</p>
+                        </div>
+
+                        {/* Digital Marketing */}
+                        <div style={{ backgroundColor: 'white', padding: '40px', borderRadius: '16px', boxShadow: '0 10px 25px -5px rgba(0,0,0,0.05)', transition: 'transform 0.3s' }} onMouseOver={(e) => e.currentTarget.style.transform = 'translateY(-10px)'} onMouseOut={(e) => e.currentTarget.style.transform = 'translateY(0)'}>
+                            <div style={{ width: '80px', height: '80px', borderRadius: '20px', backgroundColor: '#fef3c7', color: '#d97706', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '2.5rem', margin: '0 auto 25px auto' }}>
+                                <i className='bx bx-trending-up'></i>
+                            </div>
+                            <h3 style={{ fontSize: '1.5rem', color: '#0f172a', margin: '0 0 15px 0' }}>Digital Marketing</h3>
+                            <p style={{ color: '#64748b', lineHeight: '1.6', margin: 0 }}>Data-driven marketing strategies, SEO, and social media campaigns to boost your brand's online presence and ROI.</p>
+                        </div>
+                    </div>
                 </div>
             </section>
 
