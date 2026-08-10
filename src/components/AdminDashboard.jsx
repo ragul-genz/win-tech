@@ -12,6 +12,7 @@ const AdminDashboard = ({ loggedUsers, courses, setCourses, blogs, setBlogs, set
         certification: 'Yes - Certificate Included',
         image: '',
         videoUrl: '',
+        price: '',
         syllabus: '',
         whatsappTemplate: ''
     });
@@ -58,7 +59,7 @@ const AdminDashboard = ({ loggedUsers, courses, setCourses, blogs, setBlogs, set
             setCourses([...courses, courseToAdd]);
             setNotifications(prev => [{ id: Date.now(), title: "New Course Available", message: `The course "${newCourse.title}" is now available.`, read: false, time: new Date().toISOString() }, ...prev]);
             setNewCourse({ 
-                title: '', level: 'Beginner', description: '', duration: '', studentsEnrolled: '', rating: '', mode: 'Online + Offline', certification: 'Yes - Certificate Included', image: '', videoUrl: '', syllabus: '', whatsappTemplate: '' 
+                title: '', level: 'Beginner', description: '', duration: '', studentsEnrolled: '', rating: '', mode: 'Online + Offline', certification: 'Yes - Certificate Included', image: '', videoUrl: '', price: '', syllabus: '', whatsappTemplate: '' 
             });
             alert("Course added successfully!");
         }
@@ -180,16 +181,18 @@ const AdminDashboard = ({ loggedUsers, courses, setCourses, blogs, setBlogs, set
                                 </div>
 
                                 {/* Row 5 */}
-                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '20px' }}>
+                                    <div>
+                                        <label style={labelStyle}>Price (₹) *</label>
+                                        <input type="number" value={newCourse.price} onChange={(e) => setNewCourse({...newCourse, price: e.target.value})} style={inputStyle} placeholder="e.g. 4999" required />
+                                    </div>
                                     <div>
                                         <label style={labelStyle}>🖼️ Course Image URL *</label>
                                         <input type="url" value={newCourse.image} onChange={(e) => setNewCourse({...newCourse, image: e.target.value})} style={inputStyle} placeholder="https://example.com/course-image.jpg" required />
-                                        <p style={{ margin: '5px 0 0 0', fontSize: '0.8rem', color: '#94a3b8' }}>Shows on course card.</p>
                                     </div>
                                     <div>
                                         <label style={labelStyle}>🎥 Course Video URL</label>
                                         <input type="url" value={newCourse.videoUrl} onChange={(e) => setNewCourse({...newCourse, videoUrl: e.target.value})} style={inputStyle} placeholder="https://youtube.com/..." />
-                                        <p style={{ margin: '5px 0 0 0', fontSize: '0.8rem', color: '#94a3b8' }}>Optional video link.</p>
                                     </div>
                                 </div>
 
@@ -223,6 +226,7 @@ const AdminDashboard = ({ loggedUsers, courses, setCourses, blogs, setBlogs, set
                                             <img src={course.image} alt={course.title} style={{ width: '60px', height: '45px', objectFit: 'cover', borderRadius: '6px' }} />
                                             <div>
                                                 <p style={{ margin: 0, fontWeight: '600', color: '#1e293b', fontSize: '0.9rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '180px' }}>{course.title}</p>
+                                                <p style={{ margin: '3px 0 0 0', color: '#10b981', fontSize: '0.85rem', fontWeight: '600' }}>₹{course.price || 4999}</p>
                                             </div>
                                         </div>
                                     ))}

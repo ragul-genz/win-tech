@@ -136,7 +136,11 @@ const LandingPage = ({ onLoginClick, onCourseClick, courses }) => {
                                     {course.rating && <span style={{ backgroundColor: '#fef3c7', color: '#d97706', padding: '4px 10px', borderRadius: '20px', fontSize: '0.75rem', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '4px' }}><i className='bx bxs-star'></i> {course.rating}</span>}
                                 </div>
                                 <h3 style={{ margin: '0 0 10px 0', fontSize: '1.25rem', color: '#0f172a', lineHeight: '1.4' }}>{course.title}</h3>
-                                <p style={{ margin: '0 0 20px 0', color: '#64748b', fontSize: '0.9rem', flex: 1 }}>By {course.instructor}</p>
+                                <p style={{ margin: '0 0 15px 0', color: '#64748b', fontSize: '0.9rem', flex: 1 }}>By {course.instructor}</p>
+                                <div style={{ marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                    <span style={{ fontSize: '1.4rem', fontWeight: 'bold', color: '#10b981' }}>₹{course.price || 4999}</span>
+                                    <span style={{ fontSize: '0.9rem', color: '#94a3b8', textDecoration: 'line-through' }}>₹{(course.price || 4999) + 2000}</span>
+                                </div>
                                 <button 
                                     onClick={() => onCourseClick(course)}
                                     style={{ width: '100%', padding: '12px', backgroundColor: '#4f46e5', color: 'white', border: 'none', borderRadius: '8px', fontWeight: '600', cursor: 'pointer', transition: 'background-color 0.2s' }}

@@ -6,9 +6,11 @@ import DashboardPractice from './components/DashboardPractice';
 import Login from './components/Login';
 import AdminDashboard from './components/AdminDashboard';
 import LandingPage from './components/LandingPage';
+import Checkout from './components/Checkout';
 
 function App() {
-  const [currentView, setCurrentView] = useState('landing'); // 'landing' | 'login' | 'dashboard'
+  const [currentView, setCurrentView] = useState('landing'); // 'landing' | 'login' | 'checkout' | 'dashboard'
+  const [checkoutCourse, setCheckoutCourse] = useState(null); // The course user is buying
   const [userRole, setUserRole] = useState(null); // 'admin' | 'user' | null
   const [currentUser, setCurrentUser] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -47,6 +49,7 @@ function App() {
         instructor: "T.Muthuvel Ganesh",
         progress: 0,
         inLibrary: true,
+        price: 3999,
         image: "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=800&auto=format&fit=crop&q=60"
     },
     {
@@ -55,6 +58,7 @@ function App() {
         instructor: "A.Vinothkumar",
         progress: 4,
         inLibrary: true,
+        price: 6999,
         image: "https://images.unsplash.com/photo-1633356122544-f134324a6cee?w=800&auto=format&fit=crop&q=60"
     },
     {
@@ -63,6 +67,7 @@ function App() {
         instructor: "Instructor Name",
         progress: 0,
         inLibrary: true,
+        price: 2499,
         image: "https://images.unsplash.com/photo-1627398240411-8fc5f1d41a33?w=800&auto=format&fit=crop&q=60"
     },
     {
@@ -71,6 +76,7 @@ function App() {
         instructor: "Instructor Name",
         progress: 0,
         inLibrary: true,
+        price: 4999,
         image: "https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=800&auto=format&fit=crop&q=60"
     }
   ]);
@@ -110,7 +116,13 @@ function App() {
     } else {
       setCurrentUser(userId); // admin
     }
-    setCurrentView('dashboard');
+    
+    // If we have a pending checkout, go to checkout, else dashboard
+    if (role === 'user' && checkoutCourse) {
+        setCurrentView('checkout');
+    } else {
+        setCurrentView('dashboard');
+    }
   };
 
   const handleLikeBlog = (blogId) => {
@@ -135,22 +147,29 @@ function App() {
 
   const handleEnrollCourse = (course) => {
       if (!userRole) {
+          setCheckoutCourse(course);
           setCurrentView('login');
       } else if (userRole === 'user') {
           if (!currentUser.enrolledCourseIds.includes(course.id)) {
-              setCurrentUser({
-                  ...currentUser,
-                  enrolledCourseIds: [...currentUser.enrolledCourseIds, course.id]
-              });
-              alert(`Successfully enrolled in ${course.title}!`);
-              setCurrentView('dashboard');
-              setActiveUserTab('courses');
+              setCheckoutCourse(course);
+              setCurrentView('checkout');
           } else {
               alert(`You are already enrolled in ${course.title}.`);
               setCurrentView('dashboard');
               setActiveUserTab('courses');
           }
       }
+  };
+
+  const confirmPurchase = (courseId) => {
+      setCurrentUser(prev => ({
+          ...prev,
+          enrolledCourseIds: [...prev.enrolledCourseIds, courseId]
+      }));
+      setCheckoutCourse(null);
+      alert(`Payment Success! You have enrolled in the course.`);
+      setCurrentView('dashboard');
+      setActiveUserTab('courses');
   };
 
   if (currentView === 'landing') {
@@ -164,7 +183,28 @@ function App() {
   }
 
   if (currentView === 'login') {
-    return <Login onLogin={handleLogin} onBack={() => setCurrentView('landing')} />;
+    return (
+        <Login 
+            onLogin={handleLogin} 
+            onBack={() => {
+                setCheckoutCourse(null);
+                setCurrentView('landing');
+            }} 
+        />
+    );
+  }
+
+  if (currentView === 'checkout') {
+      return (
+          <Checkout 
+              course={checkoutCourse} 
+              onConfirmPurchase={confirmPurchase}
+              onCancel={() => {
+                  setCheckoutCourse(null);
+                  setCurrentView('landing');
+              }}
+          />
+      );
   }
 
   if (userRole === 'admin') {
