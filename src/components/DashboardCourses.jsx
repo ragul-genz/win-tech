@@ -1,18 +1,14 @@
 import React, { useState } from 'react';
 import CourseCard from './CourseCard';
 
-const DashboardCourses = ({ searchQuery, courses = [] }) => {
-    const [activeTab, setActiveTab] = useState('all');
+const DashboardCourses = ({ searchQuery = "", courses = [], enrolledCourseIds = [], completedEpisodes = {}, updateUserProgress, onCourseClick, onGenerateCertificate }) => {
     const [selectedCourseId, setSelectedCourseId] = useState(null);
-    const [selectedLesson, setSelectedLesson] = useState(null);
+    const [selectedEpisode, setSelectedEpisode] = useState(null);
 
-    // Simulate "My Courses" having only courses with progress > 0
-    const myCourses = courses.filter(c => c.progress > 0 || c.inLibrary);
-
-    const displayedCourses = activeTab === 'all' ? courses : myCourses;
-    
-    // Filter by search query
-    const filteredCourses = displayedCourses.filter(course => 
+    const myCourses = courses.filter(c => enrolledCourseIds.includes(c.id)).filter(course => 
+        course.title.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+    const lockedCourses = courses.filter(c => !enrolledCourseIds.includes(c.id)).filter(course => 
         course.title.toLowerCase().includes(searchQuery.toLowerCase())
     );
 
@@ -23,216 +19,280 @@ const DashboardCourses = ({ searchQuery, courses = [] }) => {
             return null;
         }
 
+        const episodes = course.episodes || [];
+        const courseCompletedEpisodes = completedEpisodes[course.id] || [];
+        
+        // Find first unwatched episode, or default to episode 1, or currently selected
+        const firstUnwatched = episodes.find(ep => !courseCompletedEpisodes.includes(ep.id)) || episodes[episodes.length - 1];
+        const currentEpisode = selectedEpisode || firstUnwatched || (episodes.length > 0 ? episodes[0] : null);
+
+        // Progress Calculations
+        const totalEpisodes = episodes.length;
+        const completedCount = courseCompletedEpisodes.length;
+        const progressPercentage = totalEpisodes === 0 ? 0 : Math.round((completedCount / totalEpisodes) * 100);
+        const remainingCount = totalEpisodes - completedCount;
+
+        const handleMarkComplete = () => {
+            if (currentEpisode && !courseCompletedEpisodes.includes(currentEpisode.id)) {
+                updateUserProgress(prev => {
+                    const prevCourseEpisodes = prev.completedEpisodes[course.id] || [];
+                    const nextCourseEpisodes = [...prevCourseEpisodes, currentEpisode.id];
+                    const nextProgress = { ...prev, completedEpisodes: { ...prev.completedEpisodes, [course.id]: nextCourseEpisodes } };
+                    
+                    // Check if they just hit 100%
+                    if (nextCourseEpisodes.length === totalEpisodes && onGenerateCertificate) {
+                        onGenerateCertificate(course, nextProgress);
+                    }
+                    return nextProgress;
+                });
+
+                // Auto-advance to next episode if available
+                const currentIndex = episodes.findIndex(ep => ep.id === currentEpisode.id);
+                if (currentIndex < episodes.length - 1) {
+                    setSelectedEpisode(episodes[currentIndex + 1]);
+                }
+            }
+        };
+
+        const handlePrevious = () => {
+            const currentIndex = episodes.findIndex(ep => ep.id === currentEpisode.id);
+            if (currentIndex > 0) {
+                setSelectedEpisode(episodes[currentIndex - 1]);
+            }
+        };
+
         return (
             <main className="dashboard-main" style={{ padding: '0', fontFamily: 'Inter, sans-serif', backgroundColor: '#f8fafc' }}>
-                {/* Header / Hero Section */}
-                <div style={{ backgroundColor: '#0f172a', padding: '40px 60px', color: 'white' }}>
+                <div style={{ backgroundColor: '#0f172a', padding: '20px 60px', color: 'white' }}>
                     <button 
-                        onClick={() => {
-                            if (selectedLesson) {
-                                setSelectedLesson(null);
-                            } else {
-                                setSelectedCourseId(null);
-                            }
-                        }}
-                        style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px', fontSize: '0.9rem', fontWeight: '500', marginBottom: '20px', padding: 0 }}>
-                        <i className='bx bx-arrow-back'></i> {selectedLesson ? 'Back to Course Overview' : 'Back to Courses'}
+                        onClick={() => { setSelectedCourseId(null); setSelectedEpisode(null); }}
+                        style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px', fontSize: '0.9rem', fontWeight: '500', padding: 0 }}>
+                        <i className='bx bx-arrow-back'></i> Back to My Courses
                     </button>
-                    
-                    {selectedLesson ? (
-                        /* Lesson Player View */
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                <h1 style={{ fontSize: '1.8rem', margin: '0', lineHeight: '1.2' }}>{selectedLesson.title}</h1>
-                                <span style={{ backgroundColor: 'rgba(239, 68, 68, 0.2)', color: '#fca5a5', padding: '5px 10px', borderRadius: '5px', fontSize: '0.8rem', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '5px' }}>
-                                    <i className='bx bx-shield-quarter'></i> Protected Content
-                                </span>
-                            </div>
-                            <div 
-                                style={{ width: '100%', height: '500px', backgroundColor: 'black', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', overflow: 'hidden', userSelect: 'none' }}
-                                onContextMenu={(e) => e.preventDefault()} // Prevent right click
-                            >
-                                {/* Moving Watermark to prevent screen recording */}
-                                <div style={{ position: 'absolute', top: '10%', left: '10%', opacity: '0.2', color: 'white', fontSize: '1.5rem', fontWeight: 'bold', transform: 'rotate(-20deg)', pointerEvents: 'none' }}>
-                                    User ID: 987654321
-                                </div>
-                                <div style={{ position: 'absolute', bottom: '20%', right: '10%', opacity: '0.2', color: 'white', fontSize: '1.5rem', fontWeight: 'bold', transform: 'rotate(-20deg)', pointerEvents: 'none' }}>
-                                    User ID: 987654321
-                                </div>
-                                
-                                {/* Invisible overlay to block direct interaction with video elements if real video was used */}
-                                <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: '60px', zIndex: 10 }}></div>
-
-                                <i className='bx bx-play-circle' style={{ fontSize: '5rem', color: 'white', cursor: 'pointer', opacity: '0.8', transition: 'opacity 0.2s', zIndex: 20 }} onMouseOver={(e) => e.target.style.opacity = '1'} onMouseOut={(e) => e.target.style.opacity = '0.8'}></i>
-                                
-                                <div style={{ position: 'absolute', bottom: '20px', left: '20px', right: '20px', height: '5px', backgroundColor: 'rgba(255,255,255,0.3)', borderRadius: '5px', zIndex: 20 }}>
-                                    <div style={{ width: '30%', height: '100%', backgroundColor: '#3b82f6', borderRadius: '5px' }}></div>
-                                </div>
-                            </div>
-                        </div>
-                    ) : (
-                        /* Course Overview Hero */
-                        <div style={{ display: 'flex', gap: '40px', alignItems: 'flex-start' }}>
-                            <div style={{ flex: '1.5' }}>
-                                <h1 style={{ fontSize: '2.5rem', margin: '0 0 15px 0', lineHeight: '1.2' }}>{course.title}</h1>
-                                <p style={{ color: '#cbd5e1', fontSize: '1.1rem', lineHeight: '1.6', margin: '0 0 20px 0' }}>
-                                    {course.description || "Master the concepts and build real-world projects with comprehensive, step-by-step training from industry experts."}
-                                </p>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '20px', color: '#94a3b8', fontSize: '0.95rem', marginBottom: '30px', flexWrap: 'wrap' }}>
-                                    <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><i className='bx bxs-user-circle' style={{ fontSize: '1.3rem', color: '#3b82f6' }}></i> By {course.instructor || 'Admin'}</span>
-                                    <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><i className='bx bx-bar-chart-alt-2' style={{ fontSize: '1.2rem' }}></i> {course.level || 'Beginner'}</span>
-                                    <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><i className='bx bx-time-five' style={{ fontSize: '1.2rem' }}></i> {course.duration || 'Flexible'}</span>
-                                    <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><i className='bx bx-certification' style={{ fontSize: '1.2rem' }}></i> Certificate Included</span>
-                                </div>
-                                <div style={{ display: 'flex', gap: '15px' }}>
-                                    <button style={{ padding: '12px 30px', backgroundColor: '#3b82f6', color: 'white', border: 'none', borderRadius: '8px', fontWeight: '600', fontSize: '1rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', transition: 'all 0.2s' }}>
-                                        <i className='bx bx-play-circle' style={{ fontSize: '1.3rem' }}></i> Resume Learning
-                                    </button>
-                                    <button style={{ padding: '12px 20px', backgroundColor: 'rgba(255,255,255,0.1)', color: 'white', border: 'none', borderRadius: '8px', fontWeight: '600', fontSize: '1rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', transition: 'all 0.2s' }}>
-                                        <i className='bx bx-bookmark' ></i>
-                                    </button>
-                                </div>
-                            </div>
-                            <div style={{ flex: '1', position: 'relative', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 10px 25px rgba(0,0,0,0.3)' }}>
-                                <img src={course.image} alt={course.title} style={{ width: '100%', height: '220px', objectFit: 'cover', display: 'block' }} />
-                                {course.videoUrl && (
-                                    <a href={course.videoUrl} target="_blank" rel="noreferrer" style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', backgroundColor: 'rgba(0,0,0,0.6)', color: 'white', borderRadius: '50%', width: '50px', height: '50px', display: 'flex', alignItems: 'center', justifyContent: 'center', textDecoration: 'none', cursor: 'pointer', transition: 'all 0.2s' }}>
-                                        <i className='bx bx-play' style={{ fontSize: '32px', marginLeft: '4px' }}></i>
-                                    </a>
-                                )}
-                            </div>
-                        </div>
-                    )}
+                    <h1 style={{ fontSize: '1.8rem', margin: '15px 0 0 0', lineHeight: '1.2' }}>{course.title}</h1>
                 </div>
 
-                {/* Content Layout */}
+                {/* Progress Tracking Widget */}
+                <div style={{ padding: '20px 60px', backgroundColor: 'white', borderBottom: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', gap: '40px' }}>
+                    <div>
+                        <p style={{ margin: 0, color: '#64748b', fontSize: '0.9rem', fontWeight: '500' }}>Your Progress</p>
+                        <h3 style={{ margin: '5px 0 0 0', color: '#0f172a', fontSize: '1.2rem' }}>{completedCount} / {totalEpisodes} Episodes</h3>
+                    </div>
+                    <div style={{ flex: 1, maxWidth: '500px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                            <span style={{ fontSize: '0.9rem', color: '#64748b', fontWeight: '600' }}>Progress</span>
+                            <span style={{ fontSize: '0.9rem', color: progressPercentage === 100 ? '#10b981' : '#4f46e5', fontWeight: 'bold' }}>{progressPercentage}%</span>
+                        </div>
+                        <div style={{ width: '100%', height: '8px', backgroundColor: '#e2e8f0', borderRadius: '4px', overflow: 'hidden' }}>
+                            <div style={{ width: `${progressPercentage}%`, height: '100%', backgroundColor: progressPercentage === 100 ? '#10b981' : '#4f46e5', borderRadius: '4px', transition: 'width 0.3s ease' }}></div>
+                        </div>
+                    </div>
+                    <div style={{ display: 'flex', gap: '20px' }}>
+                        <div style={{ textAlign: 'center', backgroundColor: '#ecfdf5', padding: '10px 20px', borderRadius: '8px' }}>
+                            <span style={{ display: 'block', fontSize: '1.2rem', fontWeight: 'bold', color: '#10b981' }}>{completedCount}</span>
+                            <span style={{ fontSize: '0.8rem', color: '#047857', fontWeight: '600' }}>Completed</span>
+                        </div>
+                        <div style={{ textAlign: 'center', backgroundColor: '#f1f5f9', padding: '10px 20px', borderRadius: '8px' }}>
+                            <span style={{ display: 'block', fontSize: '1.2rem', fontWeight: 'bold', color: '#64748b' }}>{remainingCount}</span>
+                            <span style={{ fontSize: '0.8rem', color: '#475569', fontWeight: '600' }}>Remaining</span>
+                        </div>
+                    </div>
+                </div>
+
                 <div style={{ display: 'flex', gap: '30px', padding: '40px 60px', alignItems: 'flex-start' }}>
                     
-                    {/* Main Content (Left) */}
-                    <div style={{ flex: '2', backgroundColor: 'white', padding: '30px', borderRadius: '12px', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
-                        <h2 style={{ fontSize: '1.6rem', color: '#0f172a', margin: '0 0 25px 0' }}>Course Contents</h2>
-                        
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-                            {[
-                                { id: 1, day: 1, title: "Day_1: Introduction to Full Stack Development |Course Overview|", completed: true },
-                                { id: 2, day: 2, title: "Day_2: Introduction to HTML| Install IDE |Develop an E-Commerce Website Using HT...", completed: true },
-                                { id: 3, day: 3, title: "Day_3: Develop a price tag in E-Commerce Website using CSS", completed: false },
-                                { id: 4, day: 4, title: "Day_4: CSS Positioning", completed: false },
-                                { id: 5, day: 5, title: "Day_5: Introduction to CSS| Develop a Blog Website", completed: false },
-                                { id: 6, day: 6, title: "Day_6: Structuring a Commercial Website", completed: false }
-                            ].map(lesson => (
-                                <div 
-                                    key={lesson.id} 
-                                    onClick={() => {
-                                        setSelectedLesson(lesson);
-                                        window.scrollTo({ top: 0, behavior: 'smooth' });
-                                    }}
-                                    style={{ 
-                                        display: 'flex', alignItems: 'center', gap: '20px', padding: '15px', borderBottom: '1px solid #f1f5f9',
-                                        cursor: 'pointer', backgroundColor: selectedLesson?.id === lesson.id ? '#f8fafc' : 'transparent',
-                                        borderRadius: '8px', transition: 'background-color 0.2s'
-                                    }}
-                                    onMouseOver={(e) => { if (selectedLesson?.id !== lesson.id) e.currentTarget.style.backgroundColor = '#f8fafc'; }}
-                                    onMouseOut={(e) => { if (selectedLesson?.id !== lesson.id) e.currentTarget.style.backgroundColor = 'transparent'; }}
-                                >
+                    {/* Main Content (Left) - Video Player */}
+                    <div style={{ flex: '2', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                        {currentEpisode ? (
+                            <>
+                                <div style={{ width: '100%', height: '500px', backgroundColor: 'black', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}>
+                                    <iframe 
+                                        width="100%" 
+                                        height="100%" 
+                                        src={currentEpisode.videoUrl} 
+                                        title={currentEpisode.title}
+                                        frameBorder="0" 
+                                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                                        allowFullScreen
+                                    ></iframe>
+                                </div>
+                                <div style={{ backgroundColor: 'white', padding: '30px', borderRadius: '12px', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                                        <div>
+                                            <h2 style={{ fontSize: '1.6rem', color: '#0f172a', margin: '0 0 15px 0' }}>{currentEpisode.title}</h2>
+                                            <p style={{ color: '#475569', lineHeight: '1.7', margin: 0, fontSize: '1.05rem' }}>
+                                                {currentEpisode.description || "No description provided for this episode."}
+                                            </p>
+                                        </div>
+                                    </div>
                                     
-                                    {/* Custom Badge */}
-                                    <div style={{ position: 'relative', width: '80px', height: '60px', flexShrink: 0 }}>
-                                        <div style={{ position: 'absolute', top: '0', left: '0', width: '0', height: '0', borderTop: '25px solid #0f172a', borderRight: '25px solid transparent' }}></div>
-                                        <div style={{ position: 'absolute', bottom: '0', right: '0', width: '0', height: '0', borderBottom: '25px solid #0f172a', borderLeft: '25px solid transparent' }}></div>
-                                        <div style={{ position: 'absolute', left: '0', top: '15px', fontSize: '0.85rem', fontWeight: 'bold', color: '#0f172a', lineHeight: '1.1' }}>
-                                            Full<br/>stack
-                                        </div>
-                                        <div style={{ position: 'absolute', right: '0', top: '10px', width: '40px', height: '40px', borderRadius: '50%', backgroundColor: '#0f172a', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.8rem', fontWeight: '600' }}>
-                                            {lesson.day}/30
-                                        </div>
-                                    </div>
-
-                                    {/* Title */}
-                                    <div style={{ flex: 1 }}>
-                                        <p style={{ margin: 0, color: '#334155', fontSize: '1rem', lineHeight: '1.5' }}>{lesson.title}</p>
-                                    </div>
-
-                                    {/* Status */}
-                                    <div style={{ width: '30px', display: 'flex', justifyContent: 'center' }}>
-                                        {lesson.completed && (
-                                            <i className='bx bx-check' style={{ color: '#22c55e', fontSize: '1.5rem' }}></i>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '30px', paddingTop: '20px', borderTop: '1px solid #e2e8f0' }}>
+                                        <button 
+                                            onClick={handlePrevious}
+                                            disabled={episodes.findIndex(ep => ep.id === currentEpisode.id) === 0}
+                                            style={{ padding: '12px 24px', backgroundColor: 'transparent', color: '#475569', border: '1px solid #cbd5e1', borderRadius: '8px', fontWeight: '600', cursor: episodes.findIndex(ep => ep.id === currentEpisode.id) === 0 ? 'not-allowed' : 'pointer', opacity: episodes.findIndex(ep => ep.id === currentEpisode.id) === 0 ? 0.5 : 1 }}
+                                        >
+                                            [ Previous ]
+                                        </button>
+                                        
+                                        {!courseCompletedEpisodes.includes(currentEpisode.id) ? (
+                                            <button 
+                                                onClick={handleMarkComplete}
+                                                style={{ padding: '12px 24px', backgroundColor: '#4f46e5', color: 'white', border: 'none', borderRadius: '8px', fontWeight: '600', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}
+                                            >
+                                                [ Mark Complete & Continue &rarr; ]
+                                            </button>
+                                        ) : (
+                                            <button 
+                                                disabled
+                                                style={{ padding: '12px 24px', backgroundColor: '#10b981', color: 'white', border: 'none', borderRadius: '8px', fontWeight: '600', cursor: 'default', display: 'flex', alignItems: 'center', gap: '8px' }}
+                                            >
+                                                <i className='bx bx-check-circle'></i> Completed
+                                            </button>
                                         )}
                                     </div>
                                 </div>
-                            ))}
-                        </div>
+                            </>
+                        ) : (
+                            <div style={{ padding: '40px', backgroundColor: 'white', borderRadius: '12px', textAlign: 'center', color: '#64748b' }}>
+                                No episodes available for this course yet.
+                            </div>
+                        )}
                     </div>
 
-                    {/* Sidebar (Right) */}
-                    <div style={{ flex: '1', display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                        
-                        {/* Progress Card */}
-                        <div style={{ backgroundColor: 'white', padding: '25px', borderRadius: '12px', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
-                            <h3 style={{ margin: '0 0 15px 0', color: '#0f172a', fontSize: '1.1rem', fontWeight: '600' }}>2 of 45 Lessons Completed</h3>
-                            <div style={{ width: '100%', height: '8px', backgroundColor: '#e2e8f0', borderRadius: '4px', overflow: 'hidden' }}>
-                                <div style={{ width: '5%', height: '100%', backgroundColor: '#3b82f6', borderRadius: '4px' }}></div>
-                            </div>
+                    {/* Sidebar (Right) - Episodes List */}
+                    <div style={{ flex: '1', backgroundColor: 'white', borderRadius: '12px', boxShadow: '0 2px 4px rgba(0,0,0,0.05)', overflow: 'hidden' }}>
+                        <div style={{ padding: '20px', borderBottom: '1px solid #e2e8f0', backgroundColor: '#f8fafc' }}>
+                            <h3 style={{ margin: 0, color: '#0f172a', fontSize: '1.1rem' }}>Course Content</h3>
                         </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', maxHeight: '600px', overflowY: 'auto' }}>
+                            {episodes.map((episode, index) => {
+                                const isActive = currentEpisode?.id === episode.id;
+                                const isCompleted = courseCompletedEpisodes.includes(episode.id);
+                                // An episode is unlocked if it's the first one, OR if it's already completed, OR if the PREVIOUS episode is completed
+                                const prevEpisodeCompleted = index === 0 ? true : courseCompletedEpisodes.includes(episodes[index - 1].id);
+                                const isLocked = !isCompleted && !prevEpisodeCompleted;
 
-                        {/* Instructor Card */}
-                        <div style={{ backgroundColor: 'white', padding: '25px', borderRadius: '12px', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
-                            <h3 style={{ margin: '0 0 20px 0', color: '#0f172a', fontSize: '1.2rem', fontWeight: '600' }}>Instructor</h3>
-                            
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-                                <div style={{ width: '50px', height: '50px', borderRadius: '50%', backgroundColor: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                    <i className='bx bxs-user-circle' style={{ fontSize: '3rem', color: '#0f172a' }}></i>
-                                </div>
-                                <div>
-                                    <p style={{ margin: '0 0 5px 0', color: '#334155', fontWeight: '500', fontSize: '1rem' }}>{course.instructor || "Instructor Name"}</p>
-                                    <p style={{ margin: 0, color: '#3b82f6', fontSize: '0.9rem', cursor: 'pointer' }}>Instructor</p>
-                                </div>
-                            </div>
+                                let StatusIcon = () => <div style={{ width: '20px', height: '20px', borderRadius: '50%', border: '2px solid #cbd5e1' }}></div>; // Not started
+                                if (isActive) StatusIcon = () => <i className='bx bx-play-circle' style={{ color: '#4f46e5', fontSize: '1.5rem' }}></i>; // Current
+                                if (isCompleted) StatusIcon = () => <i className='bx bxs-check-circle' style={{ color: '#10b981', fontSize: '1.5rem' }}></i>; // Completed
+                                if (isLocked) StatusIcon = () => <i className='bx bxs-lock-alt' style={{ color: '#94a3b8', fontSize: '1.3rem' }}></i>; // Locked
+
+                                return (
+                                    <div 
+                                        key={episode.id}
+                                        onClick={() => {
+                                            if (!isLocked) {
+                                                setSelectedEpisode(episode);
+                                                window.scrollTo({ top: 0, behavior: 'smooth' });
+                                            }
+                                        }}
+                                        style={{ 
+                                            display: 'flex', alignItems: 'center', gap: '15px', padding: '15px 20px', borderBottom: '1px solid #f1f5f9',
+                                            cursor: isLocked ? 'not-allowed' : 'pointer', backgroundColor: isActive ? '#eff6ff' : 'transparent',
+                                            transition: 'background-color 0.2s', opacity: isLocked ? 0.6 : 1
+                                        }}
+                                        onMouseOver={(e) => { if (!isActive && !isLocked) e.currentTarget.style.backgroundColor = '#f8fafc'; }}
+                                        onMouseOut={(e) => { if (!isActive && !isLocked) e.currentTarget.style.backgroundColor = 'transparent'; }}
+                                    >
+                                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '30px' }}>
+                                            <StatusIcon />
+                                        </div>
+                                        <div>
+                                            <p style={{ margin: 0, color: isActive ? '#4f46e5' : '#334155', fontSize: '0.95rem', fontWeight: isActive ? '600' : '500' }}>{episode.title}</p>
+                                        </div>
+                                    </div>
+                                );
+                            })}
                         </div>
-
                     </div>
-
                 </div>
             </main>
         );
     }
 
     return (
-        <main className="dashboard-main">
-            <div className="tabs-container">
-                <div className="tabs">
-                    <button 
-                        className={`tab-btn ${activeTab === 'all' ? 'active' : ''}`}
-                        onClick={() => setActiveTab('all')}
-                    >
-                        All Courses <span className="badge">10</span>
-                    </button>
-                    <button 
-                        className={`tab-btn ${activeTab === 'my' ? 'active' : ''}`}
-                        onClick={() => setActiveTab('my')}
-                    >
-                        My Courses <span className="badge">10</span>
-                    </button>
-                </div>
+        <main className="dashboard-main" style={{ padding: '0', backgroundColor: '#f8fafc' }}>
+            <div style={{ padding: '20px 40px', backgroundColor: 'white', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <h2 style={{ margin: 0, color: '#0f172a', fontSize: '1.5rem', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    My Purchased Courses 
+                    <span style={{ backgroundColor: '#e0e7ff', color: '#4f46e5', padding: '2px 12px', borderRadius: '12px', fontSize: '1rem', fontWeight: 'bold' }}>
+                        {myCourses.length}
+                    </span>
+                </h2>
             </div>
 
-            <div className="controls-bar">
-                <button className="sort-btn">
-                    <i className='bx bx-sort-down'></i> Sort <i className='bx bx-chevron-down'></i>
-                </button>
-            </div>
+            <div style={{ padding: '30px 40px' }}>
+                {myCourses.length > 0 ? (
+                    <div className="courses-grid-dash" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '30px' }}>
+                        {myCourses.map(course => {
+                            const episodes = course.episodes || [];
+                            const courseCompletedEpisodes = completedEpisodes[course.id] || [];
+                            const totalEpisodes = episodes.length;
+                            const completedCount = courseCompletedEpisodes.length;
+                            const progress = totalEpisodes === 0 ? 0 : Math.round((completedCount / totalEpisodes) * 100);
 
-            <div className="courses-grid-dash">
-                {filteredCourses.map(course => (
-                    <CourseCard key={course.id} course={course} onClick={() => setSelectedCourseId(course.id)} />
-                ))}
+                            return (
+                                <div key={course.id} style={{ backgroundColor: 'white', borderRadius: '16px', border: '1px solid #e2e8f0', overflow: 'hidden', display: 'flex', flexDirection: 'column', transition: 'transform 0.2s, box-shadow 0.2s' }} onMouseOver={(e) => { e.currentTarget.style.transform = 'translateY(-5px)'; e.currentTarget.style.boxShadow = '0 10px 25px -5px rgba(0,0,0,0.1)'; }} onMouseOut={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none'; }}>
+                                    <div style={{ height: '160px', backgroundImage: `url(${course.image})`, backgroundSize: 'cover', backgroundPosition: 'center' }}></div>
+                                    <div style={{ padding: '25px', display: 'flex', flexDirection: 'column', flex: 1 }}>
+                                        <h3 style={{ margin: '0 0 10px 0', color: '#0f172a', fontSize: '1.2rem', lineHeight: '1.4' }}>{course.title}</h3>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '5px', marginBottom: '20px', color: '#f59e0b', fontSize: '0.9rem', fontWeight: 'bold' }}>
+                                            ⭐ {course.rating}
+                                        </div>
+                                        
+                                        <div style={{ marginTop: 'auto' }}>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '0.85rem' }}>
+                                                <span style={{ color: '#64748b' }}>{completedCount} / {totalEpisodes} Episodes</span>
+                                                <span style={{ fontWeight: '600', color: progress === 100 ? '#10b981' : '#4f46e5' }}>{progress}%</span>
+                                            </div>
+                                            <div style={{ width: '100%', height: '8px', backgroundColor: '#f1f5f9', borderRadius: '4px', overflow: 'hidden', marginBottom: '20px' }}>
+                                                <div style={{ width: `${progress}%`, height: '100%', backgroundColor: progress === 100 ? '#10b981' : '#4f46e5', borderRadius: '4px' }}></div>
+                                            </div>
+
+                                            {progress === 100 ? (
+                                                <button onClick={() => { if(onGenerateCertificate) onGenerateCertificate(course, { completedEpisodes }); }} style={{ width: '100%', padding: '12px', backgroundColor: 'transparent', color: '#10b981', border: '2px solid #10b981', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                                                    <i className='bx bx-certification'></i> View Certificate
+                                                </button>
+                                            ) : (
+                                                <button onClick={() => setSelectedCourseId(course.id)} style={{ width: '100%', padding: '12px', backgroundColor: '#0f172a', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' }}>
+                                                    [ Continue ]
+                                                </button>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                ) : (
+                    <div style={{ padding: '40px', backgroundColor: 'white', borderRadius: '12px', textAlign: 'center', color: '#64748b', border: '1px dashed #cbd5e1' }}>
+                        <i className='bx bx-book-open' style={{ fontSize: '3rem', color: '#94a3b8', marginBottom: '10px' }}></i>
+                        <p style={{ margin: 0, fontSize: '1.1rem' }}>You haven't purchased any courses yet.</p>
+                        <p style={{ margin: '5px 0 0 0', fontSize: '0.9rem' }}>Check out the available courses below to get started!</p>
+                    </div>
+                )}
             </div>
             
-            {filteredCourses.length === 0 && (
-                <div className="no-results">
-                    <p>No courses found matching "{searchQuery}"</p>
+            <div style={{ padding: '20px 40px', borderTop: '1px solid #e2e8f0', borderBottom: '1px solid #e2e8f0', backgroundColor: 'white' }}>
+                <h2 style={{ margin: 0, color: '#0f172a', fontSize: '1.3rem' }}>
+                    Explore More Courses
+                </h2>
+            </div>
+            <div style={{ padding: '30px 40px' }}>
+                <div className="courses-grid-dash" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '20px' }}>
+                    {lockedCourses.map(course => (
+                        <CourseCard 
+                            key={course.id} 
+                            course={course} 
+                            isLocked={true}
+                            onClick={() => {
+                                if (onCourseClick) onCourseClick(course);
+                            }} 
+                        />
+                    ))}
                 </div>
-            )}
+            </div>
         </main>
     );
 };
